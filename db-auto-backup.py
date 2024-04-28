@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import bz2
 import fnmatch
 import gzip
@@ -82,14 +83,11 @@ def get_compressed_file_extension(algorithm: str) -> str:
 def get_success_hook_url() -> Optional[str]:
     if success_hook_url := os.environ.get("SUCCESS_HOOK_URL"):
         return success_hook_url
-
     if healthchecks_id := os.environ.get("HEALTHCHECKS_ID"):
         healthchecks_host = os.environ.get("HEALTHCHECKS_HOST", "hc-ping.com")
         return f"https://{healthchecks_host}/{healthchecks_id}"
-
     if uptime_kuma_url := os.environ.get("UPTIME_KUMA_URL"):
         return uptime_kuma_url
-
     return None
 
 
@@ -101,10 +99,12 @@ def backup_psql(container: Container) -> str:
 
 MARIADB_ROOT_PASSWORD = os.environ.get("MARIADB_ROOT_PASSWORD", "")
 
+
 def backup_mysql(container: Container) -> str:
     env = get_container_env(container)
 
     # The mariadb container supports both
+
     if "MARIADB_ROOT_PASSWORD" in env:
         auth = "-p$MARIADB_ROOT_PASSWORD"
     elif "MYSQL_ROOT_PASSWORD" in env:
@@ -113,12 +113,10 @@ def backup_mysql(container: Container) -> str:
         auth = "-p" + MARIADB_ROOT_PASSWORD
     else:
         raise ValueError(f"Unable to find MySQL root password for {container.name}")
-
     if binary_exists_in_container(container, "mariadb-dump"):
         backup_binary = "mariadb-dump"
     else:
         backup_binary = "mysqldump"
-
     return f"bash -c '{backup_binary} {auth} --all-databases'"
 
 
@@ -128,6 +126,8 @@ def backup_redis(container: Container) -> str:
     Hopefully the commit is fast enough!
     """
     return "sh -c 'redis-cli SAVE > /dev/null && cat /data/dump.rdb'"
+
+
 ENABLE_PSQL = bool(os.environ.get("ENABLE_PSQL", "true"))
 ENABLE_MARIADB = bool(os.environ.get("ENABLE_MARIADB", "true"))
 ENABLE_REDIS = bool(os.environ.get("ENABLE_REDIS", "false"))
@@ -146,8 +146,8 @@ BACKUP_PROVIDERS: list[BackupProvider] = [
         enabled=ENABLE_MARIADB,
     ),
     BackupProvider(
-        patterns=["redis"], 
-        backup_method=backup_redis, 
+        patterns=["redis"],
+        backup_method=backup_redis,
         file_extension="rdb",
         enabled=ENABLE_REDIS,
     ),
@@ -167,7 +167,6 @@ def get_backup_provider(container_names: Sequence[str]) -> Optional[BackupProvid
             if any(fnmatch.fnmatch(name, pattern) for pattern in provider.patterns):
                 if provider.enabled:
                     return provider
-
     return None
 
 
@@ -182,7 +181,6 @@ def backup(now: datetime) -> None:
         backup_provider = get_backup_provider(container_names)
         if backup_provider is None:
             continue
-
         backup_file = (
             BACKUP_DIR
             / f"{container.name}.{backup_provider.file_extension}{get_compressed_file_extension(COMPRESSION)}"
@@ -205,14 +203,11 @@ def backup(now: datetime) -> None:
                     if stdout is None:
                         continue
                     f.write(stdout)
-
         os.replace(backup_temp_file_path, backup_file)
 
         if not SHOW_PROGRESS:
             print(container.name)
-
         backed_up_containers.append(container.name)
-
     duration = (datetime.now() - now).total_seconds()
     print(f"Backup complete in {duration:.2f} seconds.")
 
@@ -223,7 +218,6 @@ def backup(now: datetime) -> None:
             )
         else:
             response = requests.get(success_hook_url)
-
         response.raise_for_status()
 
 
