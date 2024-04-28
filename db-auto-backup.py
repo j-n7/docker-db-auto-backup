@@ -128,7 +128,9 @@ def backup_redis(container: Container) -> str:
     Hopefully the commit is fast enough!
     """
     return "sh -c 'redis-cli SAVE > /dev/null && cat /data/dump.rdb'"
-
+ENABLE_PSQL = bool(os.environ.get("ENABLE_PSQL", "true"))
+ENABLE_MARIADB = bool(os.environ.get("ENABLE_MARIADB", "true"))
+ENABLE_REDIS = bool(os.environ.get("ENABLE_REDIS", "false"))
 
 BACKUP_PROVIDERS: list[BackupProvider] = [
     BackupProvider(
@@ -155,11 +157,8 @@ BACKUP_PROVIDERS: list[BackupProvider] = [
 BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", "/var/backups"))
 SCHEDULE = os.environ.get("SCHEDULE", "0 0 * * *")
 SHOW_PROGRESS = sys.stdout.isatty()
-COMPRESSION = os.environ.get("COMPRESSION", "gzip")
-ENABLE_PSQL = bool(os.environ.get("ENABLE_PSQL", "true"))
-ENABLE_MARIADB = bool(os.environ.get("ENABLE_MARIADB", "true"))
-ENABLE_REDIS = bool(os.environ.get("ENABLE_REDIS", "false"))
 INCLUDE_LOGS = bool(os.environ.get("INCLUDE_LOGS"))
+COMPRESSION = os.environ.get("COMPRESSION", "gzip")
 
 
 def get_backup_provider(container_names: Sequence[str]) -> Optional[BackupProvider]:
