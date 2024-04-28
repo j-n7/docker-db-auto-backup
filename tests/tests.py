@@ -6,6 +6,7 @@ from typing import Any, Callable
 import pytest
 
 BACKUP_DIR = Path.cwd() / "backups"
+ENABLE_REDIS = "true"
 
 
 def import_file(path: Path) -> Any:
