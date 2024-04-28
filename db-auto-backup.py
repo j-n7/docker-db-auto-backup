@@ -99,6 +99,8 @@ def backup_psql(container: Container) -> str:
     return f"pg_dumpall -U {user}"
 
 
+MARIADB_ROOT_PASSWORD = os.environ.get("MARIADB_ROOT_PASSWORD", "")
+
 def backup_mysql(container: Container) -> str:
     env = get_container_env(container)
 
@@ -107,6 +109,8 @@ def backup_mysql(container: Container) -> str:
         auth = "-p$MARIADB_ROOT_PASSWORD"
     elif "MYSQL_ROOT_PASSWORD" in env:
         auth = "-p$MYSQL_ROOT_PASSWORD"
+    elif MARIADB_ROOT_PASSWORD:
+        auth = "-p" + MARIADB_ROOT_PASSWORD
     else:
         raise ValueError(f"Unable to find MySQL root password for {container.name}")
 
@@ -131,14 +135,19 @@ BACKUP_PROVIDERS: list[BackupProvider] = [
         patterns=["postgres", "tensorchord/pgvecto-rs", "nextcloud/aio-postgresql"],
         backup_method=backup_psql,
         file_extension="sql",
+        enabled=ENABLE_PSQL,
     ),
     BackupProvider(
         patterns=["mysql", "mariadb", "*/linuxserver/mariadb"],
         backup_method=backup_mysql,
         file_extension="sql",
+        enabled=ENABLE_MARIADB,
     ),
     BackupProvider(
-        patterns=["redis"], backup_method=backup_redis, file_extension="rdb"
+        patterns=["redis"], 
+        backup_method=backup_redis, 
+        file_extension="rdb",
+        enabled=ENABLE_REDIS,
     ),
 ]
 
@@ -146,7 +155,10 @@ BACKUP_PROVIDERS: list[BackupProvider] = [
 BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", "/var/backups"))
 SCHEDULE = os.environ.get("SCHEDULE", "0 0 * * *")
 SHOW_PROGRESS = sys.stdout.isatty()
-COMPRESSION = os.environ.get("COMPRESSION", "plain")
+COMPRESSION = os.environ.get("COMPRESSION", "gzip")
+ENABLE_PSQL = bool(os.environ.get("ENABLE_PSQL", "true"))
+ENABLE_MARIADB = bool(os.environ.get("ENABLE_MARIADB", "true"))
+ENABLE_REDIS = bool(os.environ.get("ENABLE_REDIS", "false"))
 INCLUDE_LOGS = bool(os.environ.get("INCLUDE_LOGS"))
 
 
@@ -154,7 +166,8 @@ def get_backup_provider(container_names: Sequence[str]) -> Optional[BackupProvid
     for name in container_names:
         for provider in BACKUP_PROVIDERS:
             if any(fnmatch.fnmatch(name, pattern) for pattern in provider.patterns):
-                return provider
+                if provider.enabled:
+                    return provider
 
     return None
 
