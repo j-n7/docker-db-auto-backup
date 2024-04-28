@@ -1,11 +1,10 @@
 name: CI
 
 on: [push, pull_request, workflow_dispatch]
-runs-on: self-hosted
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -18,7 +17,7 @@ jobs:
       run: ./scripts/lint.sh
 
   e2e-test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -33,7 +32,7 @@ jobs:
       run: ./scripts/test.sh
 
   build-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs:
       - lint
       - e2e-test
