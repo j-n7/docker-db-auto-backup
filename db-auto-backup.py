@@ -24,6 +24,7 @@ class BackupProvider(NamedTuple):
     patterns: list[str]
     backup_method: Callable[[Container], str]
     file_extension: str
+    enabled: bool
 
 
 def get_container_env(container: Container) -> Dict[str, Optional[str]]:
